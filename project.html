@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTB Machine Checklist + CJCA Exam Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 20px; }
+  h1 { font-size: 1.8rem; font-weight: 700; color: #58a6ff; text-align: center; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #8b949e; font-size: 0.9rem; margin-bottom: 24px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+  .badge-red { background: #3d1a1a; color: #f85149; border: 1px solid #f85149; }
+  .badge-blue { background: #0e2540; color: #58a6ff; border: 1px solid #58a6ff; }
+  .badge-green { background: #0a2010; color: #3fb950; border: 1px solid #3fb950; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+  .tab { padding: 8px 18px; border-radius: 6px; cursor: pointer; border: 1px solid #30363d; background: #161b22; color: #8b949e; font-size: 0.875rem; transition: all 0.2s; }
+  .tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .tab:hover:not(.active) { border-color: #58a6ff; color: #58a6ff; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section { background: #161b22; border: 1px solid #30363d; border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
+  .section-header { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; background: #1c2128; user-select: none; }
+  .section-header:hover { background: #22272e; }
+  .section-title { font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .section-icon { font-size: 1.1rem; }
+  .chevron { transition: transform 0.2s; color: #8b949e; }
+  .section.collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { padding: 12px 16px; }
+  .section.collapsed .section-body { display: none; }
+  .checklist { list-style: none; }
+  .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; border-bottom: 1px solid #21262d; font-size: 0.875rem; line-height: 1.5; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li input[type=checkbox] { margin-top: 3px; width: 14px; height: 14px; flex-shrink: 0; accent-color: #58a6ff; cursor: pointer; }
+  .checklist li.checked label { text-decoration: line-through; color: #484f58; }
+  .checklist li label { cursor: pointer; flex: 1; }
+  code { background: #0d1117; border: 1px solid #30363d; padding: 1px 5px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 0.8rem; color: #79c0ff; }
+  .note { background: #0e2540; border-left: 3px solid #1f6feb; padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 0.8rem; color: #a5d6ff; margin: 8px 0; }
+  .warning { background: #2d1a00; border-left: 3px solid #d29922; padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 0.8rem; color: #e3b341; margin: 8px 0; }
+  .progress-bar { background: #21262d; border-radius: 10px; height: 8px; margin: 4px 0 10px; }
+  .progress-fill { background: linear-gradient(90deg, #1f6feb, #58a6ff); height: 8px; border-radius: 10px; transition: width 0.3s; }
+  .progress-label { font-size: 0.75rem; color: #8b949e; }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; text-align: center; flex: 1; min-width: 100px; }
+  .stat-num { font-size: 1.5rem; font-weight: 700; color: #58a6ff; }
+  .stat-label { font-size: 0.75rem; color: #8b949e; }
+  .machine-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .machine-card { background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 14px; }
+  .machine-card h4 { color: #f0f6fc; margin-bottom: 8px; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+  .os-linux { color: #f0883e; }
+  .os-windows { color: #58a6ff; }
+  .tools-row { font-size: 0.8rem; color: #8b949e; margin-top: 6px; }
+  .tools-row code { margin-right: 4px; }
+  .cjca-scope { border: 1px solid #30363d; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+  .cjca-scope table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .cjca-scope th { background: #21262d; padding: 8px 12px; text-align: left; color: #8b949e; font-weight: 600; }
+  .cjca-scope td { padding: 8px 12px; border-top: 1px solid #21262d; }
+  .cjca-scope tr:hover td { background: #1c2128; }
+  .points { color: #3fb950; font-weight: 600; }
+  select { background: #161b22; border: 1px solid #30363d; color: #c9d1d9; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; }
+  .filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-row label { color: #8b949e; font-size: 0.85rem; }
+  .action-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+  .action-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+  @media(max-width:600px) { h1 { font-size: 1.3rem; } .tabs { gap: 6px; } .tab { padding: 6px 12px; font-size: 0.8rem; } }
+</style>
+</head>
+<body>
+
+<h1>🔐 HTB Pentesting Checklist</h1>
+<p class="subtitle">General Machine Methodology + HTB CJCA Exam Guide &nbsp;|&nbsp; Track your progress interactively</p>
+
+<div class="stats" id="globalStats">
+  <div class="stat-card"><div class="stat-num" id="totalChecked">0</div><div class="stat-label">Completed</div></div>
+  <div class="stat-card"><div class="stat-num" id="totalItems">0</div><div class="stat-label">Total Items</div></div>
+  <div class="stat-card"><div class="stat-num" id="pctDone">0%</div><div class="stat-label">Progress</div></div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="globalProgress" style="width:0%"></div></div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('general')">🌐 General Methodology</div>
+  <div class="tab" onclick="switchTab('linux')">🐧 Linux Machines</div>
+  <div class="tab" onclick="switchTab('windows')">🪟 Windows Machines</div>
+  <div class="tab" onclick="switchTab('cjca')">🎯 CJCA Exam</div>
+  <div class="tab" onclick="switchTab('report')">📄 Reporting</div>
+</div>
+
+<!-- ===== GENERAL METHODOLOGY ===== -->
+<div class="panel active" id="panel-general">
+
+  <div class="section" id="s-recon">
+    <div class="section-header" onclick="toggleSection('s-recon')">
+      <div class="section-title"><span class="section-icon">🔍</span> Reconnaissance & Scanning</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist" data-section="recon">
+        <li><input type="checkbox" id="r1"><label for="r1">Run initial fast Nmap scan: <code>nmap -sV -sC -oA initial &lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="r2"><label for="r2">Run full port scan: <code>nmap -p- --min-rate 5000 -oA fullscan &lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="r3"><label for="r3">Targeted service scan on all open ports: <code>nmap -sV -sC -p &lt;ports&gt; -oA targeted &lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="r4"><label for="r4">UDP scan on top ports: <code>nmap -sU --top-ports 100 &lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="r5"><label for="r5">Check for OS fingerprinting: <code>nmap -O &lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="r6"><label for="r6">Add hostname to <code>/etc/hosts</code> if discovered</label></li>
+        <li><input type="checkbox" id="r7"><label for="r7">Screenshot / document all open ports and service versions</label></li>
+        <li><input type="checkbox" id="r8"><label for="r8">Research CVEs for discovered service versions</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-web">
+    <div class="section-header" onclick="toggleSection('s-web')">
+      <div class="section-title"><span class="section-icon">🌐</span> Web Enumeration (if HTTP/S present)</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="w1"><label for="w1">Browse site manually, inspect source code, check robots.txt, sitemap.xml</label></li>
+        <li><input type="checkbox" id="w2"><label for="w2">Directory/file brute force: <code>gobuster dir -u &lt;URL&gt; -w /usr/share/wordlists/dirb/common.txt</code></label></li>
+        <li><input type="checkbox" id="w3"><label for="w3">Subdomain/vhost fuzzing: <code>ffuf -w subdomains.txt -u http://&lt;IP&gt; -H "Host: FUZZ.domain.htb"</code></label></li>
+        <li><input type="checkbox" id="w4"><label for="w4">Check for common CMS (WordPress, Joomla, Drupal) and run CMS scanner</label></li>
+        <li><input type="checkbox" id="w5"><label for="w5">Test login forms for default creds, SQL injection, and brute force</label></li>
+        <li><input type="checkbox" id="w6"><label for="w6">Test for LFI/RFI in file parameters: <code>?page=../../../../etc/passwd</code></label></li>
+        <li><input type="checkbox" id="w7"><label for="w7">Test for command injection, XSS, SSRF in all input fields</label></li>
+        <li><input type="checkbox" id="w8"><label for="w8">Run Burp Suite / intercept all requests and check for interesting headers/cookies</label></li>
+        <li><input type="checkbox" id="w9"><label for="w9">Check for file upload functionality and bypass filters</label></li>
+        <li><input type="checkbox" id="w10"><label for="w10">Look for API endpoints, exposed config files, backup files (.bak, .old, ~)</label></li>
+        <li><input type="checkbox" id="w11"><label for="w11">Run Nikto: <code>nikto -h &lt;URL&gt;</code></label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-services">
+    <div class="section-header" onclick="toggleSection('s-services')">
+      <div class="section-title"><span class="section-icon">🔌</span> Common Service Enumeration</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="sv1"><label for="sv1"><strong>FTP (21):</strong> Try anonymous login, check file permissions, check for writable dirs</label></li>
+        <li><input type="checkbox" id="sv2"><label for="sv2"><strong>SSH (22):</strong> Check version for exploits, try default/known creds, look for keys</label></li>
+        <li><input type="checkbox" id="sv3"><label for="sv3"><strong>SMTP (25/587):</strong> Enumerate users via VRFY/EXPN, check for open relay</label></li>
+        <li><input type="checkbox" id="sv4"><label for="sv4"><strong>DNS (53):</strong> Zone transfer: <code>dig axfr @&lt;IP&gt; domain.htb</code>; enumerate subdomains</label></li>
+        <li><input type="checkbox" id="sv5"><label for="sv5"><strong>SMB (139/445):</strong> Enumerate shares, check null/guest sessions, look for sensitive files</label></li>
+        <li><input type="checkbox" id="sv6"><label for="sv6"><strong>LDAP (389/636):</strong> Anonymous bind, enumerate AD objects, dump users</label></li>
+        <li><input type="checkbox" id="sv7"><label for="sv7"><strong>MSSQL (1433):</strong> Check for xp_cmdshell, SA account, linked servers</label></li>
+        <li><input type="checkbox" id="sv8"><label for="sv8"><strong>MySQL (3306):</strong> Try default creds, enumerate databases, UDF injection</label></li>
+        <li><input type="checkbox" id="sv9"><label for="sv9"><strong>RDP (3389):</strong> Check for BlueKeep, try creds, NLA config</label></li>
+        <li><input type="checkbox" id="sv10"><label for="sv10"><strong>WinRM (5985/5986):</strong> Try Evil-WinRM with discovered creds</label></li>
+        <li><input type="checkbox" id="sv11"><label for="sv11"><strong>NFS (2049):</strong> List mounts: <code>showmount -e &lt;IP&gt;</code>, check permissions</label></li>
+        <li><input type="checkbox" id="sv12"><label for="sv12"><strong>Redis (6379):</strong> Try unauthenticated access, check for RCE via webshell write</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-foothold">
+    <div class="section-header" onclick="toggleSection('s-foothold')">
+      <div class="section-title"><span class="section-icon">🚪</span> Initial Access / Foothold</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="f1"><label for="f1">Exploit discovered vulnerability (CVE, misconfiguration, weak creds)</label></li>
+        <li><input type="checkbox" id="f2"><label for="f2">Upload/deploy reverse shell — test multiple shells (PHP, Python, bash)</label></li>
+        <li><input type="checkbox" id="f3"><label for="f3">Set up listener: <code>nc -lvnp 4444</code> or use Metasploit multi/handler</label></li>
+        <li><input type="checkbox" id="f4"><label for="f4">Stabilize shell: <code>python3 -c 'import pty; pty.spawn("/bin/bash")'</code> then Ctrl+Z → stty raw -echo → fg</label></li>
+        <li><input type="checkbox" id="f5"><label for="f5">Capture <code>user.txt</code> flag and screenshot proof</label></li>
+        <li><input type="checkbox" id="f6"><label for="f6">Identify current user: <code>id</code>, <code>whoami</code>, <code>hostname</code></label></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== LINUX MACHINES ===== -->
+<div class="panel" id="panel-linux">
+
+  <div class="section" id="s-lenum">
+    <div class="section-header" onclick="toggleSection('s-lenum')">
+      <div class="section-title"><span class="section-icon">🐧</span> Linux Local Enumeration</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note">Run <code>linpeas.sh</code> immediately for automated enumeration alongside manual checks.</div>
+      <ul class="checklist">
+        <li><input type="checkbox" id="le1"><label for="le1">Check current user context: <code>id</code>, <code>whoami</code>, <code>groups</code></label></li>
+        <li><input type="checkbox" id="le2"><label for="le2">Check sudo permissions: <code>sudo -l</code></label></li>
+        <li><input type="checkbox" id="le3"><label for="le3">Check SUID/SGID binaries: <code>find / -perm -4000 -type f 2>/dev/null</code></label></li>
+        <li><input type="checkbox" id="le4"><label for="le4">Check writable directories/files: <code>find / -writable -not -path '/proc/*' 2>/dev/null</code></label></li>
+        <li><input type="checkbox" id="le5"><label for="le5">Check cron jobs: <code>crontab -l</code>, <code>cat /etc/cron*</code>, check <code>/var/spool/cron/</code></label></li>
+        <li><input type="checkbox" id="le6"><label for="le6">Check running processes and services: <code>ps aux</code>, <code>ss -tlnp</code></label></li>
+        <li><input type="checkbox" id="le7"><label for="le7">Check home directories and user files: <code>ls -la /home/*</code>, SSH keys, bash history</label></li>
+        <li><input type="checkbox" id="le8"><label for="le8">Check <code>/etc/passwd</code> and <code>/etc/shadow</code> (readable?), group memberships</label></li>
+        <li><input type="checkbox" id="le9"><label for="le9">Check installed software and version: <code>dpkg -l</code>, <code>rpm -qa</code></label></li>
+        <li><input type="checkbox" id="le10"><label for="le10">Look for config files with creds: <code>/var/www/html</code>, <code>/etc/nginx</code>, app configs</label></li>
+        <li><input type="checkbox" id="le11"><label for="le11">Check for Docker/LXC containers: <code>cat /proc/1/cgroup</code>, docker socket access</label></li>
+        <li><input type="checkbox" id="le12"><label for="le12">Check NFS exports: <code>cat /etc/exports</code> — look for no_root_squash</label></li>
+        <li><input type="checkbox" id="le13"><label for="le13">Check PATH hijacking opportunities in scripts run as root</label></li>
+        <li><input type="checkbox" id="le14"><label for="le14">Check capabilities: <code>getcap -r / 2>/dev/null</code></label></li>
+        <li><input type="checkbox" id="le15"><label for="le15">Look in /tmp, /dev/shm, /opt for interesting files or tools</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-lprivesc">
+    <div class="section-header" onclick="toggleSection('s-lprivesc')">
+      <div class="section-title"><span class="section-icon">⬆️</span> Linux Privilege Escalation Techniques</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="lp1"><label for="lp1"><strong>Sudo abuse:</strong> Check GTFOBins for each sudo binary (nano, vim, less, python, etc.)</label></li>
+        <li><input type="checkbox" id="lp2"><label for="lp2"><strong>SUID abuse:</strong> Check GTFOBins for each SUID binary</label></li>
+        <li><input type="checkbox" id="lp3"><label for="lp3"><strong>Cron job abuse:</strong> Overwrite writable scripts called by root cron; PATH injection</label></li>
+        <li><input type="checkbox" id="lp4"><label for="lp4"><strong>Kernel exploit:</strong> Check kernel version <code>uname -r</code>, search for local exploits</label></li>
+        <li><input type="checkbox" id="lp5"><label for="lp5"><strong>Credentials in files:</strong> Reuse discovered passwords for root/other users</label></li>
+        <li><input type="checkbox" id="lp6"><label for="lp6"><strong>Writable /etc/passwd:</strong> Add new root user entry</label></li>
+        <li><input type="checkbox" id="lp7"><label for="lp7"><strong>Docker group:</strong> <code>docker run -v /:/mnt --rm -it alpine chroot /mnt sh</code></label></li>
+        <li><input type="checkbox" id="lp8"><label for="lp8"><strong>LXD/LXC group:</strong> Use lxd exploit to mount host filesystem</label></li>
+        <li><input type="checkbox" id="lp9"><label for="lp9"><strong>Capabilities exploit:</strong> python3 cap_setuid, perl, etc.</label></li>
+        <li><input type="checkbox" id="lp10"><label for="lp10"><strong>NFS no_root_squash:</strong> Mount share, create SUID binary as local root</label></li>
+        <li><input type="checkbox" id="lp11"><label for="lp11"><strong>Shell escape:</strong> From restricted shells, editors (nano, vi), binaries</label></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== WINDOWS MACHINES ===== -->
+<div class="panel" id="panel-windows">
+
+  <div class="section" id="s-wenum">
+    <div class="section-header" onclick="toggleSection('s-wenum')">
+      <div class="section-title"><span class="section-icon">🪟</span> Windows Local Enumeration</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note">Upload and run <code>winpeas.exe</code> or <code>PowerUp.ps1</code> for automated enumeration.</div>
+      <ul class="checklist">
+        <li><input type="checkbox" id="we1"><label for="we1">Current user context: <code>whoami /all</code>, <code>net user %username%</code></label></li>
+        <li><input type="checkbox" id="we2"><label for="we2">List local users and groups: <code>net localgroup administrators</code>, <code>net user</code></label></li>
+        <li><input type="checkbox" id="we3"><label for="we3">Check system info: <code>systeminfo</code>, <code>wmic os get caption</code> — look for missing patches</label></li>
+        <li><input type="checkbox" id="we4"><label for="we4">Check installed programs: <code>wmic product get name,version</code></label></li>
+        <li><input type="checkbox" id="we5"><label for="we5">Check running services: <code>sc query</code>, <code>services.msc</code>, look for non-standard services</label></li>
+        <li><input type="checkbox" id="we6"><label for="we6">Check scheduled tasks: <code>schtasks /query /fo LIST /v</code></label></li>
+        <li><input type="checkbox" id="we7"><label for="we7">Check writable service paths: PowerUp <code>Invoke-AllChecks</code></label></li>
+        <li><input type="checkbox" id="we8"><label for="we8">AlwaysInstallElevated check: query both HKLM and HKCU registry keys</label></li>
+        <li><input type="checkbox" id="we9"><label for="we9">Search for credentials in files: <code>findstr /s /i "password" C:\*.txt C:\*.xml C:\*.ini</code></label></li>
+        <li><input type="checkbox" id="we10"><label for="we10">Check registry for saved creds: AutoLogon, VNC, PuTTY keys</label></li>
+        <li><input type="checkbox" id="we11"><label for="we11">Check PowerShell history: <code>%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt</code></label></li>
+        <li><input type="checkbox" id="we12"><label for="we12">Check user directories: Desktop, Documents, Downloads for flags/creds</label></li>
+        <li><input type="checkbox" id="we13"><label for="we13">Check for unquoted service paths</label></li>
+        <li><input type="checkbox" id="we14"><label for="we14">Check for DLL hijacking opportunities</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-ad">
+    <div class="section-header" onclick="toggleSection('s-ad')">
+      <div class="section-title"><span class="section-icon">🏢</span> Active Directory Enumeration</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="ad1"><label for="ad1">Enumerate domain: <code>net view /domain</code>, <code>nltest /dclist:&lt;domain&gt;</code></label></li>
+        <li><input type="checkbox" id="ad2"><label for="ad2">Run BloodHound/SharpHound to map attack paths</label></li>
+        <li><input type="checkbox" id="ad3"><label for="ad3">Enumerate users: <code>net user /domain</code>, PowerView <code>Get-DomainUser</code></label></li>
+        <li><input type="checkbox" id="ad4"><label for="ad4">Kerberoasting: <code>impacket-GetUserSPNs domain/user:pass -dc-ip &lt;IP&gt; -request</code></label></li>
+        <li><input type="checkbox" id="ad5"><label for="ad5">AS-REP Roasting: <code>impacket-GetNPUsers domain/ -usersfile users.txt -dc-ip &lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="ad6"><label for="ad6">Pass-the-Hash / Pass-the-Ticket attacks</label></li>
+        <li><input type="checkbox" id="ad7"><label for="ad7">DCSync attack (if DCSyncRights): <code>impacket-secretsdump domain/user:pass@&lt;IP&gt;</code></label></li>
+        <li><input type="checkbox" id="ad8"><label for="ad8">Check GPO and OU permissions for weak ACLs</label></li>
+        <li><input type="checkbox" id="ad9"><label for="ad9">Check for LAPS, GMSA passwords accessible to current user</label></li>
+        <li><input type="checkbox" id="ad10"><label for="ad10">Check SMB shares domain-wide: <code>cme smb &lt;subnet&gt; -u user -p pass --shares</code></label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-wprivesc">
+    <div class="section-header" onclick="toggleSection('s-wprivesc')">
+      <div class="section-title"><span class="section-icon">⬆️</span> Windows Privilege Escalation</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="wp1"><label for="wp1"><strong>Token impersonation:</strong> SeImpersonatePrivilege → PrintSpoofer, JuicyPotato, RoguePotato</label></li>
+        <li><input type="checkbox" id="wp2"><label for="wp2"><strong>Scheduled task abuse:</strong> Overwrite executable of writable task running as SYSTEM</label></li>
+        <li><input type="checkbox" id="wp3"><label for="wp3"><strong>Unquoted service path:</strong> Place malicious exe in path gap</label></li>
+        <li><input type="checkbox" id="wp4"><label for="wp4"><strong>Weak service permissions:</strong> Change binPath to reverse shell</label></li>
+        <li><input type="checkbox" id="wp5"><label for="wp5"><strong>AlwaysInstallElevated:</strong> Create malicious .msi with msfvenom</label></li>
+        <li><input type="checkbox" id="wp6"><label for="wp6"><strong>Code injection into scheduled task</strong></label></li>
+        <li><input type="checkbox" id="wp7"><label for="wp7"><strong>Stored credential reuse:</strong> Mimikatz, credential dumping</label></li>
+        <li><input type="checkbox" id="wp8"><label for="wp8"><strong>UAC bypass techniques</strong></label></li>
+        <li><input type="checkbox" id="wp9"><label for="wp9">Capture <code>root.txt</code> from Administrator/SYSTEM desktop and screenshot</label></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== CJCA EXAM ===== -->
+<div class="panel" id="panel-cjca">
+
+  <div class="note" style="margin-bottom:16px">
+    <strong>CJCA Exam Format:</strong> Grey-box pentest of 5 machines (NIX01, NIX02, WEB01, WIN01, WIN02) + ~27 SIEM alerts (FP/TP analysis). Each flag = 10 pts. Need ≥80 pts to pass. Professional report required.
+  </div>
+
+  <div class="cjca-scope">
+    <table>
+      <thead><tr><th>Host</th><th>Description</th><th>OS</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td><strong>NIX01</strong></td><td>Software Development Server</td><td>🐧 Linux</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><strong>NIX02</strong></td><td>Email Server</td><td>🐧 Linux</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><strong>WEB01</strong></td><td>Web Server</td><td>🐧 Linux</td><td><span class="badge badge-red">High</span></td></tr>
+        <tr><td><strong>WIN01</strong></td><td>Windows Client</td><td>🪟 Windows</td><td><span class="badge badge-blue">Medium</span></td></tr>
+        <tr><td><strong>WIN02</strong></td><td>Windows Management Server</td><td>🪟 Windows</td><td><span class="badge badge-blue">Medium</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="s-cjca-prep">
+    <div class="section-header" onclick="toggleSection('s-cjca-prep')">
+      <div class="section-title"><span class="section-icon">⚙️</span> Pre-Exam Preparation</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="cp1"><label for="cp1">Install and configure SysReptor with CJCA report template before exam day</label></li>
+        <li><input type="checkbox" id="cp2"><label for="cp2">Prepare Kali/Pwnbox environment with all tools installed and tested</label></li>
+        <li><input type="checkbox" id="cp3"><label for="cp3">Set up note-taking workspace (Obsidian / CherryTree / Notion) with machine templates</label></li>
+        <li><input type="checkbox" id="cp4"><label for="cp4">Prepare folder structure: <code>/CJCA/NIX01/</code>, <code>/CJCA/NIX02/</code>, etc. for screenshots + output</label></li>
+        <li><input type="checkbox" id="cp5"><label for="cp5">Have wordlists ready: <code>rockyou.txt</code>, <code>common.txt</code>, SecLists</label></li>
+        <li><input type="checkbox" id="cp6"><label for="cp6">Prepare reverse shell cheatsheet (PHP, Python, bash, PowerShell)</label></li>
+        <li><input type="checkbox" id="cp7"><label for="cp7">Review GTFOBins and LOLBAS for quick reference</label></li>
+        <li><input type="checkbox" id="cp8"><label for="cp8">Test VPN connection and Pwnbox access</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-cjca-red">
+    <div class="section-header" onclick="toggleSection('s-cjca-red')">
+      <div class="section-title"><span class="section-icon">🔴</span> Red Team — Per Machine Checklist <span class="badge badge-red">50 pts max</span></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="warning">Screenshot EVERYTHING — every command, every output, every flag. You cannot go back and re-do this in reporting.</div>
+      <ul class="checklist">
+        <li><input type="checkbox" id="cr1"><label for="cr1">Nmap full scan all 5 hosts, document open ports + service versions</label></li>
+        <li><input type="checkbox" id="cr2"><label for="cr2">Add all discovered hostnames to <code>/etc/hosts</code></label></li>
+        <li><input type="checkbox" id="cr3"><label for="cr3"><strong>WEB01:</strong> Enumerate web app, find vulnerability (RCE, SQLi, file upload, etc.), gain shell</label></li>
+        <li><input type="checkbox" id="cr4"><label for="cr4"><strong>NIX01/NIX02:</strong> Enumerate services (FTP, SSH, SMTP, etc.), find creds or exploit, gain shell</label></li>
+        <li><input type="checkbox" id="cr5"><label for="cr5"><strong>WIN01/WIN02:</strong> Enumerate SMB, RDP, WinRM; look for credential reuse from Linux hosts</label></li>
+        <li><input type="checkbox" id="cr6"><label for="cr6">Collect user flag <code>user.txt</code> on each machine (+10 pts each)</label></li>
+        <li><input type="checkbox" id="cr7"><label for="cr7">Escalate privileges on each machine and collect root/admin flag (+10 pts each)</label></li>
+        <li><input type="checkbox" id="cr8"><label for="cr8">Document each vulnerability with: description, CVSS score, proof, remediation</label></li>
+        <li><input type="checkbox" id="cr9"><label for="cr9">Try credential reuse across all machines (username:password combos found)</label></li>
+        <li><input type="checkbox" id="cr10"><label for="cr10">Check for pivot opportunities between Linux and Windows machines</label></li>
+        <li><input type="checkbox" id="cr11"><label for="cr11">Clean up tools left on hosts (linpeas, winpeas files as noted in scope)</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-cjca-blue">
+    <div class="section-header" onclick="toggleSection('s-cjca-blue')">
+      <div class="section-title"><span class="section-icon">🔵</span> Blue Team — SIEM Alert Analysis <span class="badge badge-blue">~30 pts</span></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="note">~40 alerts presented; ~27 must be analyzed. Mark each as True Positive (TP) or False Positive (FP) with evidence.</div>
+      <ul class="checklist">
+        <li><input type="checkbox" id="cb1"><label for="cb1">Download SIEM alert data from the exam lab environment</label></li>
+        <li><input type="checkbox" id="cb2"><label for="cb2">For each alert: identify alert type, source IP, destination, timestamp, action taken</label></li>
+        <li><input type="checkbox" id="cb3"><label for="cb3">Cross-reference alerts with MITRE ATT&CK framework technique IDs</label></li>
+        <li><input type="checkbox" id="cb4"><label for="cb4">TP indicators: unusual processes, known malicious hashes, suspicious parent-child processes, known attack tools</label></li>
+        <li><input type="checkbox" id="cb5"><label for="cb5">FP indicators: legitimate admin tools, scheduled tasks, whitelisted IPs, normal business behavior</label></li>
+        <li><input type="checkbox" id="cb6"><label for="cb6">Analyze network traffic alerts: port scans, beaconing, data exfiltration patterns</label></li>
+        <li><input type="checkbox" id="cb7"><label for="cb7">Analyze authentication alerts: failed logins, brute force, pass-the-hash, privilege escalation</label></li>
+        <li><input type="checkbox" id="cb8"><label for="cb8">Analyze endpoint alerts: suspicious scripts, encoded PowerShell, process injection</label></li>
+        <li><input type="checkbox" id="cb9"><label for="cb9">Document each alert decision with specific evidence and reasoning</label></li>
+        <li><input type="checkbox" id="cb10"><label for="cb10">Complete all ~27 required alerts before finalizing report</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-cjca-strategy">
+    <div class="section-header" onclick="toggleSection('s-cjca-strategy')">
+      <div class="section-title"><span class="section-icon">🧠</span> Exam Strategy & Tips</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><input type="checkbox" id="cs1"><label for="cs1">Start with WEB01 — web machines often give first foothold most reliably</label></li>
+        <li><input type="checkbox" id="cs2"><label for="cs2">Try credential reuse between machines immediately after finding any credentials</label></li>
+        <li><input type="checkbox" id="cs3"><label for="cs3">Focus on getting 80 pts minimum, not perfection — don't over-optimize at 90+ pts</label></li>
+        <li><input type="checkbox" id="cs4"><label for="cs4">Allocate time: ~60% Red Team, ~20% Blue Team, ~20% Report writing</label></li>
+        <li><input type="checkbox" id="cs5"><label for="cs5">Use SysReptor to fill report template in real-time as you find things</label></li>
+        <li><input type="checkbox" id="cs6"><label for="cs6">Don't spend >3 hours stuck on one machine — pivot to another, come back</label></li>
+        <li><input type="checkbox" id="cs7"><label for="cs7">The report is graded too — a bad report can fail you even with 100 pts technically</label></li>
+        <li><input type="checkbox" id="cs8"><label for="cs8">Budget ~2.5 weeks for result review after submitting report</label></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== REPORTING ===== -->
+<div class="panel" id="panel-report">
+
+  <div class="section" id="s-report">
+    <div class="section-header" onclick="toggleSection('s-report')">
+      <div class="section-title"><span class="section-icon">📄</span> Professional Report Checklist</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="warning">The CJCA report is evaluated — it can fail you even with full technical points. Quality matters.</div>
+      <ul class="checklist">
+        <li><input type="checkbox" id="rp1"><label for="rp1">Executive Summary: non-technical overview, business impact, overall risk rating</label></li>
+        <li><input type="checkbox" id="rp2"><label for="rp2">Scope and Engagement details: hosts tested, methodology, rules of engagement</label></li>
+        <li><input type="checkbox" id="rp3"><label for="rp3">Attack Chain narrative: how vulnerabilities chain together to show full impact</label></li>
+        <li><input type="checkbox" id="rp4"><label for="rp4">Per-finding format: Title, CVSS Score, Severity, Description, Root Cause, Impact, Evidence, Remediation</label></li>
+        <li><input type="checkbox" id="rp5"><label for="rp5">Screenshots: every critical step, every flag, every exploit run — with visible timestamps</label></li>
+        <li><input type="checkbox" id="rp6"><label for="rp6">Command output blocks: copy exact commands and terminal output for reproducibility</label></li>
+        <li><input type="checkbox" id="rp7"><label for="rp7">CVSS v3 score for each finding (use calculator: first.org/cvss/calculator/3.1)</label></li>
+        <li><input type="checkbox" id="rp8"><label for="rp8">Remediation steps: specific, actionable, not just "patch the system"</label></li>
+        <li><input type="checkbox" id="rp9"><label for="rp9">SIEM Alert table: Alert #, TP/FP classification, evidence summary</label></li>
+        <li><input type="checkbox" id="rp10"><label for="rp10">Cleanup / Remediation tracking table: list all files/tools left on hosts</label></li>
+        <li><input type="checkbox" id="rp11"><label for="rp11">Proofread for spelling errors, broken links, missing screenshots</label></li>
+        <li><input type="checkbox" id="rp12"><label for="rp12">Export final report as PDF and review formatting before submission</label></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="s-tools">
+    <div class="section-header" onclick="toggleSection('s-tools')">
+      <div class="section-title"><span class="section-icon">🛠️</span> Essential Tools Quick Reference</div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="machine-grid">
+        <div class="machine-card">
+          <h4>🔍 Scanning</h4>
+          <div class="tools-row"><code>nmap</code> <code>masscan</code> <code>rustscan</code></div>
+          <div class="tools-row" style="margin-top:6px; color:#c9d1d9; font-size:0.8rem">Full port scan → targeted version scan → UDP scan</div>
+        </div>
+        <div class="machine-card">
+          <h4>🌐 Web</h4>
+          <div class="tools-row"><code>gobuster</code> <code>ffuf</code> <code>nikto</code> <code>burpsuite</code> <code>wpscan</code></div>
+        </div>
+        <div class="machine-card">
+          <h4>🪟 Windows/AD</h4>
+          <div class="tools-row"><code>winpeas</code> <code>BloodHound</code> <code>SharpHound</code> <code>mimikatz</code> <code>impacket</code></div>
+        </div>
+        <div class="machine-card">
+          <h4>🐧 Linux</h4>
+          <div class="tools-row"><code>linpeas</code> <code>pspy</code> <code>linenum.sh</code> <code>les.sh</code></div>
+        </div>
+        <div class="machine-card">
+          <h4>🔑 Credential</h4>
+          <div class="tools-row"><code>hydra</code> <code>hashcat</code> <code>john</code> <code>crackmapexec</code></div>
+        </div>
+        <div class="machine-card">
+          <h4>📄 Reporting</h4>
+          <div class="tools-row"><code>SysReptor</code> <code>Flameshot</code> <code>obsidian</code> <code>cherrytree</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+      const panels = ['general','linux','windows','cjca','report'];
+      t.classList.toggle('active', panels[i] === tab);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab)?.classList.add('active');
+  }
+
+  function toggleSection(id) {
+    document.getElementById(id)?.classList.toggle('collapsed');
+  }
+
+  function updateStats() {
+    const all = document.querySelectorAll('.checklist input[type=checkbox]');
+    const checked = document.querySelectorAll('.checklist input[type=checkbox]:checked');
+    document.getElementById('totalItems').textContent = all.length;
+    document.getElementById('totalChecked').textContent = checked.length;
+    const pct = all.length ? Math.round(checked.length / all.length * 100) : 0;
+    document.getElementById('pctDone').textContent = pct + '%';
+    document.getElementById('globalProgress').style.width = pct + '%';
+  }
+
+  document.addEventListener('change', function(e) {
+    if (e.target.type === 'checkbox') {
+      const li = e.target.closest('li');
+      if (li) li.classList.toggle('checked', e.target.checked);
+      updateStats();
+    }
+  });
+
+  updateStats();
+</script>
+</body>
+</html>

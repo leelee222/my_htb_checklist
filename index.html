@@ -726,101 +726,389 @@
 <!-- ===== CJCA EXAM ===== -->
 <div class="panel" id="panel-cjca">
 
-  <div class="note" style="margin-bottom:14px">
-    <strong>CJCA Exam Format:</strong> Grey-box pentest of 5 machines (NIX01, NIX02, WEB01, WIN01, WIN02) + ~27 SIEM alerts (FP/TP analysis). Each flag = 10 pts. Need ≥80 pts to pass. Professional report required.
+<style>
+  /* ── Playbook-specific styles ── */
+  .pb-hero{background:linear-gradient(135deg,#12102a,#1a1535);border:1px solid var(--border2);border-radius:14px;padding:20px 22px;margin-bottom:16px;position:relative;overflow:hidden}
+  .pb-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(124,58,237,.2),transparent 70%);pointer-events:none}
+  .pb-hero h2{font-size:1.1rem;font-weight:700;color:#c4b5fd;margin-bottom:4px}
+  .pb-hero p{font-size:.8rem;color:var(--text3);line-height:1.6}
+  .pb-hero .tagline{font-size:.75rem;color:var(--purple);font-weight:500;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}
+
+  .score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+  .score-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:default;transition:all .2s}
+  .score-card:hover{border-color:var(--purple-dim);background:var(--bg4)}
+  .score-card .sc-host{font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+  .score-card .sc-pts{font-size:1.3rem;font-weight:700;color:var(--purple);line-height:1}
+  .score-card .sc-label{font-size:.65rem;color:var(--text3);margin-top:2px}
+  .score-card .sc-os{font-size:.75rem;margin-bottom:2px}
+  .score-card.pwned{border-color:#3fb950;background:#0a1f12}
+  .score-card.pwned .sc-pts{color:#4ade80}
+  .score-card.pwned .sc-host{color:#4ade80}
+
+  .phase{border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .phase-header{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg3);cursor:pointer;user-select:none;transition:background .15s}
+  .phase-header:hover{background:var(--bg4)}
+  .phase-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
+  .phase-num.red{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+  .phase-num.blue{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
+  .phase-num.green{background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)}
+  .phase-num.orange{background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3)}
+  .phase-info{flex:1}
+  .phase-title{font-weight:600;font-size:.9rem;color:var(--text)}
+  .phase-meta{font-size:.72rem;color:var(--text3);margin-top:1px}
+  .phase-pts{font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .phase-pts.red{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+  .phase-pts.blue{background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.2)}
+  .phase-pts.green{background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)}
+  .phase-chevron{color:var(--text3);font-size:.75rem;transition:transform .2s}
+  .phase.collapsed .phase-chevron{transform:rotate(-90deg)}
+  .phase-body{padding:14px 16px;background:var(--bg2)}
+  .phase.collapsed .phase-body{display:none}
+
+  .mission-step{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(46,43,82,.4);align-items:flex-start}
+  .mission-step:last-child{border-bottom:none}
+  .mission-step input[type=checkbox]{margin-top:3px;width:14px;height:14px;flex-shrink:0;accent-color:var(--purple);cursor:pointer}
+  .mission-step label{cursor:pointer;font-size:.82rem;line-height:1.6;color:var(--text2);flex:1}
+  .mission-step.checked label{text-decoration:line-through;color:var(--text3);opacity:.55}
+  .mission-step:hover{background:rgba(167,139,250,.03);border-radius:4px}
+
+  .machine-block{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+  .machine-block:last-child{margin-bottom:0}
+  .machine-block-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  .machine-badge{padding:3px 10px;border-radius:6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .mb-linux{background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.25)}
+  .mb-windows{background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.25)}
+  .machine-name{font-weight:700;font-size:.92rem;color:var(--text)}
+  .machine-desc{font-size:.75rem;color:var(--text3);margin-left:auto}
+  .attack-flow{display:flex;flex-direction:column;gap:0}
+  .flow-step{display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(46,43,82,.3);font-size:.81rem;line-height:1.55}
+  .flow-step:last-child{border-bottom:none}
+  .flow-step input[type=checkbox]{margin-top:3px;width:13px;height:13px;flex-shrink:0;accent-color:var(--purple);cursor:pointer}
+  .flow-step label{cursor:pointer;color:var(--text2);flex:1}
+  .flow-step.checked label{text-decoration:line-through;color:var(--text3);opacity:.5}
+  .flow-arrow{color:var(--purple);font-size:.7rem;margin-top:4px;flex-shrink:0}
+
+  .siem-triage{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .triage-box{background:var(--bg3);border-radius:8px;padding:12px}
+  .triage-box.tp{border:1px solid rgba(239,68,68,.3)}
+  .triage-box.fp{border:1px solid rgba(74,222,128,.3)}
+  .triage-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+  .triage-box.tp .triage-title{color:#f87171}
+  .triage-box.fp .triage-title{color:#4ade80}
+  .triage-item{font-size:.76rem;color:var(--text2);padding:3px 0;border-bottom:1px solid rgba(46,43,82,.3);line-height:1.5}
+  .triage-item:last-child{border-bottom:none}
+  .triage-item::before{content:'• ';color:var(--text3)}
+
+  .timeline{display:flex;gap:0;margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .tl-block{flex:1;padding:10px 8px;text-align:center;font-size:.72rem;border-right:1px solid var(--border)}
+  .tl-block:last-child{border-right:none}
+  .tl-block .tl-time{font-weight:700;font-size:.85rem;color:var(--purple);margin-bottom:2px}
+  .tl-block .tl-label{color:var(--text3)}
+  .tl-block .tl-sub{color:var(--text3);font-size:.65rem;margin-top:2px;opacity:.7}
+  .tl-block.active-phase{background:var(--purple-bg)}
+
+  .rule-card{background:var(--bg3);border-left:3px solid var(--purple);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;font-size:.8rem;color:var(--text2);line-height:1.6}
+  .rule-card strong{color:var(--text);display:block;margin-bottom:2px}
+
+  @media(max-width:600px){.score-grid{grid-template-columns:repeat(3,1fr)}.siem-triage{grid-template-columns:1fr}.timeline{flex-direction:column}}
+</style>
+
+  <!-- Hero Banner -->
+  <div class="pb-hero">
+    <div class="tagline">🎯 CJCA Exam Playbook</div>
+    <h2>Certified Junior Cybersecurity Analyst — Mission Briefing</h2>
+    <p>Grey-box pentest of 5 machines + ~27 SIEM alert triages. You need <strong style="color:#c4b5fd">≥ 80 points</strong> to pass. Each flag = 10 pts. The report is graded — a failing report fails you even at 100 pts technical.</p>
   </div>
 
-  <div class="cjca-scope">
-    <table>
-      <thead><tr><th>Host</th><th>Description</th><th>OS</th><th>Priority</th></tr></thead>
-      <tbody>
-        <tr><td><strong>NIX01</strong></td><td>Software Development Server</td><td>🐧 Linux</td><td><span class="badge badge-red">High</span></td></tr>
-        <tr><td><strong>NIX02</strong></td><td>Email Server</td><td>🐧 Linux</td><td><span class="badge badge-red">High</span></td></tr>
-        <tr><td><strong>WEB01</strong></td><td>Web Server</td><td>🐧 Linux</td><td><span class="badge badge-red">High</span></td></tr>
-        <tr><td><strong>WIN01</strong></td><td>Windows Client</td><td>🪟 Windows</td><td><span class="badge badge-purple">Medium</span></td></tr>
-        <tr><td><strong>WIN02</strong></td><td>Windows Management Server</td><td>🪟 Windows</td><td><span class="badge badge-purple">Medium</span></td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="section" id="s-cjca-prep">
-    <div class="section-header" onclick="toggleSection('s-cjca-prep')">
-      <div class="section-title">⚙️ Pre-Exam Preparation</div><span class="chevron">▼</span>
+  <!-- Score Tracker -->
+  <div style="font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">🏆 Target Score Tracker — click to toggle pwned</div>
+  <div class="score-grid">
+    <div class="score-card" onclick="this.classList.toggle('pwned')" title="Click when pwned">
+      <div class="sc-os">🐧</div><div class="sc-host">WEB01</div><div class="sc-pts">20</div><div class="sc-label">pts available</div>
     </div>
-    <div class="section-body">
-      <ul class="checklist">
-        <li><input type="checkbox"><label>Install and configure SysReptor with CJCA report template before exam day</label></li>
-        <li><input type="checkbox"><label>Set up Kali/Pwnbox with all tools verified: linpeas, winpeas, pspy, BloodHound, impacket, evil-winrm</label></li>
-        <li><input type="checkbox"><label>Folder structure ready: <code>/CJCA/NIX01/</code>, <code>/CJCA/NIX02/</code>, <code>/CJCA/WEB01/</code>, <code>/CJCA/WIN01/</code>, <code>/CJCA/WIN02/</code></label></li>
-        <li><input type="checkbox"><label>Wordlists ready: <code>rockyou.txt</code>, <code>raft-medium</code>, SecLists subdomains, API wordlists</label></li>
-        <li><input type="checkbox"><label>Prepare reverse shell one-liners cheatsheet (bash, PHP, Python3, PowerShell)</label></li>
-        <li><input type="checkbox"><label>Prepare GTFOBins and LOLBAS bookmarks for quick lookup</label></li>
-        <li><input type="checkbox"><label>Test VPN connection and Pwnbox access</label></li>
-        <li><input type="checkbox"><label>Set up Flameshot or screenshot tool with timestamps visible</label></li>
-      </ul>
+    <div class="score-card" onclick="this.classList.toggle('pwned')" title="Click when pwned">
+      <div class="sc-os">🐧</div><div class="sc-host">NIX01</div><div class="sc-pts">20</div><div class="sc-label">pts available</div>
+    </div>
+    <div class="score-card" onclick="this.classList.toggle('pwned')" title="Click when pwned">
+      <div class="sc-os">🐧</div><div class="sc-host">NIX02</div><div class="sc-pts">20</div><div class="sc-label">pts available</div>
+    </div>
+    <div class="score-card" onclick="this.classList.toggle('pwned')" title="Click when pwned">
+      <div class="sc-os">🪟</div><div class="sc-host">WIN01</div><div class="sc-pts">20</div><div class="sc-label">pts available</div>
+    </div>
+    <div class="score-card" onclick="this.classList.toggle('pwned')" title="Click when pwned">
+      <div class="sc-os">🪟</div><div class="sc-host">WIN02</div><div class="sc-pts">20</div><div class="sc-label">pts available</div>
     </div>
   </div>
 
-  <div class="section" id="s-cjca-red">
-    <div class="section-header" onclick="toggleSection('s-cjca-red')">
-      <div class="section-title">🔴 Red Team — Per Machine Checklist <span class="badge badge-red">50 pts</span></div><span class="chevron">▼</span>
+  <!-- Time Budget -->
+  <div style="font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">⏱ Suggested Time Budget (48h exam window)</div>
+  <div class="timeline">
+    <div class="tl-block active-phase"><div class="tl-time">H 0–4</div><div class="tl-label">Recon</div><div class="tl-sub">All 5 hosts</div></div>
+    <div class="tl-block"><div class="tl-time">H 4–20</div><div class="tl-label">Linux Attack</div><div class="tl-sub">WEB01→NIX01→NIX02</div></div>
+    <div class="tl-block"><div class="tl-time">H 20–30</div><div class="tl-label">Windows Attack</div><div class="tl-sub">WIN01→WIN02</div></div>
+    <div class="tl-block"><div class="tl-time">H 30–36</div><div class="tl-label">SIEM Triage</div><div class="tl-sub">~27 alerts</div></div>
+    <div class="tl-block"><div class="tl-time">H 36–48</div><div class="tl-label">Report</div><div class="tl-sub">Write + review</div></div>
+  </div>
+
+  <!-- PHASE 0: Before you start -->
+  <div class="phase" id="ph0">
+    <div class="phase-header" onclick="togglePhase('ph0')">
+      <div class="phase-num orange">0</div>
+      <div class="phase-info">
+        <div class="phase-title">Before You Start — Setup</div>
+        <div class="phase-meta">Do this the day before. Never on exam day morning.</div>
+      </div>
+      <span class="phase-pts orange">Prep</span>
+      <span class="phase-chevron">▼</span>
     </div>
-    <div class="section-body">
-      <div class="warning">Screenshot EVERY command output, every flag, every exploit run. You cannot re-do this during report writing.</div>
-      <ul class="checklist">
-        <li><input type="checkbox"><label>Nmap all 5 hosts, document all open ports + service versions</label></li>
-        <li><input type="checkbox"><label>Add all discovered hostnames + vhosts to <code>/etc/hosts</code></label></li>
-        <li><input type="checkbox"><label><strong>WEB01:</strong> Enumerate web app + vhosts, find IDOR/SQLi/LFI/RCE, gain initial shell</label></li>
-        <li><input type="checkbox"><label><strong>NIX01:</strong> Enumerate all services, exploit misconfiguration or CVE, gain shell</label></li>
-        <li><input type="checkbox"><label><strong>NIX02:</strong> Enumerate email server services (SMTP, IMAP, etc.), check for known CVEs</label></li>
-        <li><input type="checkbox"><label><strong>WIN01/WIN02:</strong> Enumerate SMB, WinRM, RDP; try credential reuse from Linux machines</label></li>
-        <li><input type="checkbox"><label>Collect <code>user.txt</code> from all accessible machines (+10 pts each)</label></li>
-        <li><input type="checkbox"><label>Escalate privileges on each machine, collect root/admin flag (+10 pts each)</label></li>
-        <li><input type="checkbox"><label>Try credential reuse aggressively across all machines (every found user:pass combo)</label></li>
-        <li><input type="checkbox"><label>Check for internal network pivot opportunities (docker networks, internal subnets)</label></li>
-        <li><input type="checkbox"><label>Document each finding: vulnerability, CVSS, proof screenshot, remediation recommendation</label></li>
-      </ul>
+    <div class="phase-body">
+      <div class="mission-step"><input type="checkbox"><label>SysReptor installed and CJCA report template loaded — open a draft, add scope, test PDF export</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Folder structure created: <code>mkdir -p ~/CJCA/{WEB01,NIX01,NIX02,WIN01,WIN02}/{scans,loot,screenshots,exploits}</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>Tools verified working: <code>nmap</code>, <code>ffuf</code>, <code>gobuster</code>, <code>evil-winrm</code>, <code>impacket-*</code>, <code>linpeas</code>, <code>winpeas</code>, <code>pspy64</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>Wordlists staged: <code>rockyou.txt</code>, <code>raft-medium-directories.txt</code>, <code>subdomains-top1million-5000.txt</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>Screenshot tool configured with <strong>timestamp visible</strong> in every capture (Flameshot → settings → show clock)</label></div>
+      <div class="mission-step"><input type="checkbox"><label>VPN + Pwnbox tested and connected</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Python HTTP server alias set: <code>alias serve='python3 -m http.server 8000'</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>GTFOBins and LOLBAS open in browser tabs</label></div>
     </div>
   </div>
 
-  <div class="section" id="s-cjca-blue">
-    <div class="section-header" onclick="toggleSection('s-cjca-blue')">
-      <div class="section-title">🔵 Blue Team — SIEM Alert Analysis <span class="badge badge-purple">~30 pts</span></div><span class="chevron">▼</span>
+  <!-- PHASE 1: Recon -->
+  <div class="phase" id="ph1">
+    <div class="phase-header" onclick="togglePhase('ph1')">
+      <div class="phase-num red">1</div>
+      <div class="phase-info">
+        <div class="phase-title">Phase 1 — Mass Recon (All 5 Hosts)</div>
+        <div class="phase-meta">Run everything in parallel. Don't touch exploits yet — build the full map first.</div>
+      </div>
+      <span class="phase-pts red">H 0–4</span>
+      <span class="phase-chevron">▼</span>
     </div>
-    <div class="section-body">
-      <div class="note">~40 alerts total; ~27 required. Classify each as TP or FP with specific evidence.</div>
-      <ul class="checklist">
-        <li><input type="checkbox"><label>Download all SIEM alert data from the exam portal</label></li>
-        <li><input type="checkbox"><label>For each alert: document source IP, destination, timestamp, action, process/command involved</label></li>
-        <li><input type="checkbox"><label>Cross-reference with MITRE ATT&CK technique IDs (T1xxx)</label></li>
-        <li><input type="checkbox"><label><strong>TP indicators:</strong> known attack tools, unusual parent-child process chains, encoded PowerShell, mass auth failures</label></li>
-        <li><input type="checkbox"><label><strong>FP indicators:</strong> legitimate admin tools, scheduled tasks, known business IPs, whitelisted software</label></li>
-        <li><input type="checkbox"><label>Network alerts: port scanning patterns, C2 beaconing, lateral movement indicators</label></li>
-        <li><input type="checkbox"><label>Auth alerts: brute force, pass-the-hash (4624 type 3 + NTLM), privilege escalation (4672)</label></li>
-        <li><input type="checkbox"><label>Endpoint alerts: encoded PS, LOLBAS abuse, process injection, suspicious script execution</label></li>
-        <li><input type="checkbox"><label>Document TP/FP classification with specific evidence for each alert</label></li>
-        <li><input type="checkbox"><label>Complete all ~27 required alerts before closing the report</label></li>
-      </ul>
+    <div class="phase-body">
+      <div class="warning" style="margin-bottom:12px">Fire all nmap scans simultaneously. While they run, add IPs to /etc/hosts and start browsing HTTP ports manually.</div>
+      <div class="mission-step"><input type="checkbox"><label>Fire parallel full-port scans: <code>for ip in WEB01 NIX01 NIX02 WIN01 WIN02; do nmap -p- --min-rate 5000 -oA ~/CJCA/$ip/scans/fullscan $ip &amp; done</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>While scans run — add all IPs + expected hostnames to <code>/etc/hosts</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>Run targeted version scans on found ports for each host: <code>nmap -sV -sC -p &lt;ports&gt; -oA targeted &lt;IP&gt;</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>For each host: document open ports, service banners, OS fingerprint in SysReptor notes</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Identify any HTTP/S ports → browse manually, note CMS or app type, check for redirects to new hostnames</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Run vhost fuzzing on all HTTP targets: <code>ffuf -w subdomains-top1million-5000.txt -u http://&lt;IP&gt; -H "Host: FUZZ.&lt;domain&gt;" -ac</code></label></div>
+      <div class="mission-step"><input type="checkbox"><label>Check SMB: <code>crackmapexec smb WIN01 WIN02</code> — note OS, signing, domain name</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Check SMTP on NIX02: <code>nc &lt;NIX02&gt; 25</code> → banner grab, try VRFY, EXPN for user enum</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Research CVEs for every version fingerprinted — note them per host before moving to exploitation</label></div>
     </div>
   </div>
 
-  <div class="section" id="s-cjca-strategy">
-    <div class="section-header" onclick="toggleSection('s-cjca-strategy')">
-      <div class="section-title">🧠 Exam Strategy</div><span class="chevron">▼</span>
+  <!-- PHASE 2: Linux attack -->
+  <div class="phase" id="ph2">
+    <div class="phase-header" onclick="togglePhase('ph2')">
+      <div class="phase-num red">2</div>
+      <div class="phase-info">
+        <div class="phase-title">Phase 2 — Linux Exploitation</div>
+        <div class="phase-meta">Attack order: WEB01 first (most exploitable), then NIX01, then NIX02. Reuse every cred you find.</div>
+      </div>
+      <span class="phase-pts red">H 4–20 · 60 pts</span>
+      <span class="phase-chevron">▼</span>
     </div>
-    <div class="section-body">
-      <ul class="checklist">
-        <li><input type="checkbox"><label>Start with WEB01 — web machines yield first foothold most reliably</label></li>
-        <li><input type="checkbox"><label>Immediately try credential reuse after finding any credentials</label></li>
-        <li><input type="checkbox"><label>Target 80 pts minimum — don't burn time optimizing above that</label></li>
-        <li><input type="checkbox"><label>Time split: ~60% Red Team, ~20% Blue Team, ~20% Report</label></li>
-        <li><input type="checkbox"><label>Fill SysReptor report in real-time as you discover findings</label></li>
-        <li><input type="checkbox"><label>If stuck >3hrs on one machine — pivot to another, return later</label></li>
-        <li><input type="checkbox"><label>Report quality matters — failing report = fail even with full technical points</label></li>
-        <li><input type="checkbox"><label>Expect ~2.5 weeks wait for results after report submission</label></li>
-      </ul>
+    <div class="phase-body">
+
+      <div class="machine-block">
+        <div class="machine-block-header">
+          <span class="machine-badge mb-linux">🐧 Linux</span>
+          <span class="machine-name">WEB01</span>
+          <span class="machine-desc">Web Server — Start here</span>
+        </div>
+        <div class="attack-flow">
+          <div class="flow-step"><input type="checkbox"><label><strong>Enumerate the web app</strong> — browse, check source, robots.txt, .env, changelog, view-source for version disclosures</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Fuzz directories</strong>: <code>gobuster dir -u http://WEB01 -w raft-medium-directories.txt -x php,html,txt,bak</code></label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Test all inputs</strong> for SQLi (<code>'</code>), IDOR (<code>?id=0</code>, <code>?token=0</code>), LFI (<code>?page=../../etc/passwd</code>), command injection (<code>;id</code>)</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Check for file upload</strong> — try content-type bypass, double extension, .htaccess trick</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Exploit foothold</strong> — get reverse shell, stabilize: <code>python3 -c 'import pty;pty.spawn("/bin/bash")'</code> → stty raw -echo</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Check if inside Docker: <code>cat /.dockerenv</code> — if yes, treat container escape as the real privesc goal</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab user.txt</strong> 📸 screenshot with <code>cat user.txt</code> + IP visible → log to SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Upload linpeas + pspy</strong> → run both, read output for quick wins</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Privesc</strong>: sudo -l → SUID → cron → capabilities → creds in configs → docker group</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab root.txt</strong> 📸 screenshot → log to SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label>⚡ <strong>Immediately spray found creds</strong> against NIX01, NIX02, WIN01, WIN02 — SSH + SMB + WinRM</label></div>
+        </div>
+      </div>
+
+      <div class="machine-block">
+        <div class="machine-block-header">
+          <span class="machine-badge mb-linux">🐧 Linux</span>
+          <span class="machine-name">NIX01</span>
+          <span class="machine-desc">Dev Server</span>
+        </div>
+        <div class="attack-flow">
+          <div class="flow-step"><input type="checkbox"><label><strong>Try creds from WEB01 first</strong> — SSH, FTP, any exposed service</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Enumerate all non-standard services found in nmap — check for version-specific CVEs</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Check for dev artifacts: Git repos (<code>find / -name ".git" 2>/dev/null</code>), exposed source code, backup files</label></div>
+          <div class="flow-step"><input type="checkbox"><label>If web service: fuzz directories, check for dev/staging endpoints with weaker auth</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab user.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Run linpeas/pspy, escalate privileges</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab root.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label>⚡ Spray any new creds found across remaining machines</label></div>
+        </div>
+      </div>
+
+      <div class="machine-block">
+        <div class="machine-block-header">
+          <span class="machine-badge mb-linux">🐧 Linux</span>
+          <span class="machine-name">NIX02</span>
+          <span class="machine-desc">Email Server</span>
+        </div>
+        <div class="attack-flow">
+          <div class="flow-step"><input type="checkbox"><label><strong>Try all creds found so far</strong> first — SSH, IMAP, POP3, webmail</label></div>
+          <div class="flow-step"><input type="checkbox"><label>SMTP enum: <code>smtp-user-enum -M VRFY -U /usr/share/wordlists/metasploit/unix_users.txt -t &lt;NIX02&gt;</code></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Check for webmail interface (Roundcube, Squirrelmail, etc.) — default creds, SQLi, CVEs</label></div>
+          <div class="flow-step"><input type="checkbox"><label>If IMAP access: browse mailboxes for credentials or internal info sent over email</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Check Postfix/Exim/Sendmail configs: <code>/etc/postfix/main.cf</code> — misconfig, open relay, user list</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab user.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Escalate → <strong>root.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+        </div>
+      </div>
+
     </div>
   </div>
+
+  <!-- PHASE 3: Windows attack -->
+  <div class="phase" id="ph3">
+    <div class="phase-header" onclick="togglePhase('ph3')">
+      <div class="phase-num blue">3</div>
+      <div class="phase-info">
+        <div class="phase-title">Phase 3 — Windows Exploitation</div>
+        <div class="phase-meta">Linux creds often reuse on Windows. Try everything before bruteforcing.</div>
+      </div>
+      <span class="phase-pts blue">H 20–30 · 40 pts</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+
+      <div class="machine-block">
+        <div class="machine-block-header">
+          <span class="machine-badge mb-windows">🪟 Win</span>
+          <span class="machine-name">WIN01</span>
+          <span class="machine-desc">Windows Client</span>
+        </div>
+        <div class="attack-flow">
+          <div class="flow-step"><input type="checkbox"><label><strong>Spray all found creds</strong>: <code>crackmapexec smb WIN01 -u users.txt -p passwords.txt --continue-on-success</code></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Try WinRM: <code>evil-winrm -i WIN01 -u &lt;user&gt; -p &lt;pass&gt;</code></label></div>
+          <div class="flow-step"><input type="checkbox"><label>SMB null session: <code>smbclient -L //WIN01 -N</code>, spider shares for sensitive files</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Once in: <code>whoami /all</code> — note every privilege listed, check for SeImpersonate</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Upload and run winpeas: <code>upload winpeas.exe</code> → review output for service paths, creds, task binaries</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Check PS history, Unattend.xml, web.config, AutoLogon registry</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab user.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Escalate: SeImpersonate → PrintSpoofer/GodPotato; weak service → sc config binPath; AlwaysInstallElevated</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab root.txt</strong> from Administrator desktop 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+        </div>
+      </div>
+
+      <div class="machine-block">
+        <div class="machine-block-header">
+          <span class="machine-badge mb-windows">🪟 Win</span>
+          <span class="machine-name">WIN02</span>
+          <span class="machine-desc">Management Server</span>
+        </div>
+        <div class="attack-flow">
+          <div class="flow-step"><input type="checkbox"><label><strong>Dump creds from WIN01 if admin</strong>: <code>mimikatz sekurlsa::logonpasswords</code> or SAM dump → try on WIN02</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Pass-the-Hash if NTLM hash available: <code>evil-winrm -i WIN02 -u Administrator -H &lt;hash&gt;</code></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Check if WIN02 is a DC: <code>nltest /dclist:&lt;domain&gt;</code> — if DC, Kerberoasting and DCSync become options</label></div>
+          <div class="flow-step"><input type="checkbox"><label>Kerberoasting: <code>impacket-GetUserSPNs &lt;domain&gt;/&lt;user&gt;:&lt;pass&gt; -dc-ip WIN02 -request</code> → hashcat -m 13100</label></div>
+          <div class="flow-step"><input type="checkbox"><label><strong>Grab user.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+          <div class="flow-step"><input type="checkbox"><label>Escalate or DCSync → <strong>root.txt</strong> 📸 → SysReptor <span style="color:#4ade80">+10 pts</span></label></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PHASE 4: SIEM -->
+  <div class="phase" id="ph4">
+    <div class="phase-header" onclick="togglePhase('ph4')">
+      <div class="phase-num blue">4</div>
+      <div class="phase-info">
+        <div class="phase-title">Phase 4 — SIEM Alert Triage</div>
+        <div class="phase-meta">~40 alerts presented, ~27 required. TP/FP with evidence. Budget ~6 hours.</div>
+      </div>
+      <span class="phase-pts blue">H 30–36 · ~20 pts</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+      <div class="mission-step"><input type="checkbox"><label>Download all alert data from the exam portal — do not start triage until you have them all</label></div>
+      <div class="mission-step"><input type="checkbox"><label>For each alert record: <strong>source IP, destination, timestamp, process name, command line, parent process</strong></label></div>
+      <div class="mission-step"><input type="checkbox"><label>Cross-reference every alert with MITRE ATT&CK — identify the TTP (T1xxx) it maps to</label></div>
+      <div class="siem-triage">
+        <div class="triage-box tp">
+          <div class="triage-title">🔴 True Positive Indicators</div>
+          <div class="triage-item">Known attack tools (mimikatz, meterpreter, cobalt strike)</div>
+          <div class="triage-item">Encoded/obfuscated PowerShell (-enc, -e, base64 blob)</div>
+          <div class="triage-item">Unusual parent→child (winword.exe → cmd.exe)</div>
+          <div class="triage-item">Mass authentication failures in short window</div>
+          <div class="triage-item">Process injection (explorer → malicious child)</div>
+          <div class="triage-item">Lateral movement (psexec, wmiexec, evil-winrm IOCs)</div>
+          <div class="triage-item">LOLBAS abuse (certutil download, regsvr32 COM)</div>
+          <div class="triage-item">Beaconing: repeated outbound to same unusual IP</div>
+          <div class="triage-item">Privilege escalation events (4672, new admin group add)</div>
+        </div>
+        <div class="triage-box fp">
+          <div class="triage-title">✅ False Positive Indicators</div>
+          <div class="triage-item">Legitimate admin tools (psexec by IT team, scheduled tasks)</div>
+          <div class="triage-item">Known business IPs / internal subnets</div>
+          <div class="triage-item">Vulnerability scanner traffic (expected in environment)</div>
+          <div class="triage-item">Software update processes (Windows Update, antivirus)</div>
+          <div class="triage-item">Normal business hours + expected user + expected host</div>
+          <div class="triage-item">Developer tools on developer machines (pyinstaller, gcc)</div>
+          <div class="triage-item">Auth failures from known service accounts</div>
+        </div>
+      </div>
+      <div class="mission-step"><input type="checkbox"><label>Network alerts: look for scan patterns (many ports/IPs in short time), C2 beaconing intervals, data exfiltration size anomalies</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Auth alerts: Event 4625 (failed), 4624 Type 3 + NTLM (pass-the-hash), 4648 (explicit creds), 4672 (special logon)</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Endpoint alerts: suspicious script execution, unsigned binary in temp dir, DLL loaded from non-standard path</label></div>
+      <div class="mission-step"><input type="checkbox"><label>For each alert write in report: Alert ID → Classification (TP/FP) → MITRE TTP → Evidence → Why you decided</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Complete all ~27 required alerts — do not submit report with missing alert classifications</label></div>
+    </div>
+  </div>
+
+  <!-- PHASE 5: Report -->
+  <div class="phase" id="ph5">
+    <div class="phase-header" onclick="togglePhase('ph5')">
+      <div class="phase-num green">5</div>
+      <div class="phase-info">
+        <div class="phase-title">Phase 5 — Report Writing</div>
+        <div class="phase-meta">This is where most people lose points. Be specific. Be professional. Be complete.</div>
+      </div>
+      <span class="phase-pts green">H 36–48 · Graded</span>
+      <span class="phase-chevron">▼</span>
+    </div>
+    <div class="phase-body">
+      <div class="danger" style="margin-bottom:12px">A weak report can fail you even with 100 pts in technical flags. Graders read every word.</div>
+
+      <div class="rule-card"><strong>Executive Summary</strong>Non-technical language. State the overall risk, how many machines were compromised, what an attacker could do with this access. One page maximum.</div>
+      <div class="rule-card"><strong>Attack Narrative</strong>Tell the story. WEB01 gave foothold → found credentials → reused on WIN01 → dumped hashes → WIN02 compromised. Show the chain, not just individual bugs.</div>
+      <div class="rule-card"><strong>Per-Finding Format</strong>Title → Severity (Critical/High/Medium/Low) → CVSS v3.1 Score → Affected Host → Description → Root Cause → Impact → Proof (screenshot + command) → Remediation</div>
+      <div class="rule-card"><strong>Screenshots</strong>Every flag: <code>cat user.txt</code> with hostname visible. Every exploit: command + output. Every critical step. Timestamp must be visible.</div>
+      <div class="rule-card"><strong>SIEM Table</strong>Alert ID | TP/FP | MITRE TTP | Evidence | Classification Reasoning — one row per alert, all ~27 completed.</div>
+      <div class="rule-card"><strong>Remediation</strong>Be specific. "Patch to version X.Y.Z", "Disable anonymous SMTP relay", "Enforce MFA on RDP". Never just "apply patches".</div>
+
+      <div class="mission-step" style="margin-top:12px"><input type="checkbox"><label>Executive Summary written — non-technical, business risk focused</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Scope and engagement details filled (hosts, dates, methodology, tools)</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Attack chain narrative written — tells the full story of the compromise path</label></div>
+      <div class="mission-step"><input type="checkbox"><label>All findings documented with complete per-finding format</label></div>
+      <div class="mission-step"><input type="checkbox"><label>CVSS v3.1 score calculated for each finding (first.org/cvss/calculator/3.1)</label></div>
+      <div class="mission-step"><input type="checkbox"><label>All flag screenshots included with hostname + timestamp visible</label></div>
+      <div class="mission-step"><input type="checkbox"><label>SIEM alert table complete — all ~27 alerts classified with evidence</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Cleanup/artefact table: list every file you uploaded to target machines</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Proofread — spelling, broken references, screenshots load correctly in PDF</label></div>
+      <div class="mission-step"><input type="checkbox"><label>Export PDF → review formatting, page breaks, table layout — then submit</label></div>
+    </div>
+  </div>
+
+  <!-- Golden Rules -->
+  <div style="font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:16px 0 8px">⚡ Golden Rules</div>
+  <div class="rule-card"><strong>Credential reuse is king</strong>Every time you find a password — spray it across SSH, SMB, WinRM, RDP, web apps on all other machines immediately. Most CJCA pivots work this way.</div>
+  <div class="rule-card"><strong>Screenshot before you move on</strong>Once you close that shell you may never get it back. Flag + hostname + timestamp, every single time.</div>
+  <div class="rule-card"><strong>3-hour rule</strong>Stuck on a machine for 3 hours straight? Stop. Move to the next one. Return with fresh eyes. 80 pts is the goal, not 100.</div>
+  <div class="rule-card"><strong>Write the report in real-time</strong>Don't wait until the end. Log findings in SysReptor as you go. The last 12 hours should be polish, not panic.</div>
+  <div class="rule-card"><strong>The report can fail you</strong>Technical points only count if your report is accepted. A machine pwned with no evidence, no CVSS, and no remediation is zero points.</div>
 
 </div>
 
@@ -911,42 +1199,49 @@
 </div>
 
 <script>
-  const STORAGE_KEY='htb_checklist_v2';
-  
+  const STORAGE_KEY='htb_checklist_v3';
+
   function save(){
     const state={};
-    document.querySelectorAll('.checklist input[type=checkbox]').forEach((cb,i)=>{state[i]=cb.checked});
+    document.querySelectorAll('input[type=checkbox]').forEach((cb,i)=>{state[i]=cb.checked});
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}
   }
-  
+
   function load(){
     try{
       const state=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
-      document.querySelectorAll('.checklist input[type=checkbox]').forEach((cb,i)=>{
-        if(state[i]){cb.checked=true;cb.closest('li')?.classList.add('checked')}
+      document.querySelectorAll('input[type=checkbox]').forEach((cb,i)=>{
+        if(state[i]){
+          cb.checked=true;
+          cb.closest('li,div.mission-step,div.flow-step')?.classList.add('checked');
+        }
       });
     }catch(e){}
   }
-  
+
   function resetAll(){
     if(!confirm('Reset all checkboxes?'))return;
-    document.querySelectorAll('.checklist input[type=checkbox]').forEach(cb=>{cb.checked=false;cb.closest('li')?.classList.remove('checked')});
+    document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.checked=false;
+      cb.closest('li,div.mission-step,div.flow-step')?.classList.remove('checked');
+    });
     try{localStorage.removeItem(STORAGE_KEY)}catch(e){}
     updateStats();
   }
-  
+
   function switchTab(tab){
     const panels=['general','linux','windows','container','cjca','report'];
     document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',panels[i]===tab));
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+tab)?.classList.add('active');
   }
-  
+
   function toggleSection(id){document.getElementById(id)?.classList.toggle('collapsed')}
-  
+  function togglePhase(id){document.getElementById(id)?.classList.toggle('collapsed')}
+
   function updateStats(){
-    const all=document.querySelectorAll('.checklist input[type=checkbox]');
-    const checked=document.querySelectorAll('.checklist input[type=checkbox]:checked');
+    const all=document.querySelectorAll('input[type=checkbox]');
+    const checked=document.querySelectorAll('input[type=checkbox]:checked');
     document.getElementById('totalItems').textContent=all.length;
     document.getElementById('totalChecked').textContent=checked.length;
     const pct=all.length?Math.round(checked.length/all.length*100):0;
@@ -954,14 +1249,14 @@
     document.getElementById('progressPct').textContent=pct+'%';
     document.getElementById('globalProgress').style.width=pct+'%';
   }
-  
+
   document.addEventListener('change',function(e){
     if(e.target.type==='checkbox'){
-      e.target.closest('li')?.classList.toggle('checked',e.target.checked);
+      e.target.closest('li,div.mission-step,div.flow-step')?.classList.toggle('checked',e.target.checked);
       updateStats();save();
     }
   });
-  
+
   load();updateStats();
 </script>
 </body>

